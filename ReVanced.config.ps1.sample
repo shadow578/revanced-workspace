@@ -22,3 +22,7 @@ $global:JDKHome = "path/to/azul/jdk"
 
 # path to the Android SDK directory
 $global:SDKHome = "path/to/android/sdk"
+
+# path to apktool.jar
+# can be downloaded at https://ibotpeaches.github.io/Apktool/install/
+$global:ApkTool = "path/to/apktool.jar"

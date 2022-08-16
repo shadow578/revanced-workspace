@@ -23,6 +23,11 @@
   device serial number to deploy revanced to. 
   if not specified, a patched apk is output
 
+  .PARAMETER MergeSmali
+  merge all smali files into a single directory.
+  useful when comparing between different revisions.
+  valid with any decompile task
+
   .EXAMPLE
   PS> Invoke-Build .
 
@@ -33,11 +38,19 @@ param(
     [switch] $Debug = $false,
     [switch] $DebugPatcher = $false,
     [switch] $Root = $false,
-    [string] $Target = $null    
+    [string] $Target = $null,
+    [switch] $MergeSmali = $false
 )
 
-# load global config
+#region load global config
 . .\ReVanced.config.ps1
+requires BaseAPK
+requires MainActivity
+requires Vendor
+requires JDKHome
+requires SDKHome
+requires ApkTool
+#endregion
 
 #region Internal
 <#
@@ -162,7 +175,7 @@ task Build-Components Build-PatcherCli, Build-Patches, Build-Integrations
 .SYNOPSIS
 deletes build artifacts of all components
 #>
-task Clean {
+task Clean-Build {
     # revanced-cli
     remove "revanced-cli/.gradle/"
     remove "revanced-cli/build/"
@@ -212,6 +225,7 @@ task Build-ReVanced Check-JDK, Resolve-ComponentBuildArtifacts, {
         )
     }
     else {
+        Write-Build Blue "deploy on $Target"
         $javaArgs += @(
             "--deploy-on", $Target 
         )
@@ -234,7 +248,7 @@ task Build-ReVanced Check-JDK, Resolve-ComponentBuildArtifacts, {
 
     # run patcher
     #Write-Build Blue "invoking patcher with cmd java $($javaArgs -join " ")"
-    & "$env:JAVA_HOME/bin/java.exe" $javaArgs
+    exec { & "$env:JAVA_HOME/bin/java.exe" $javaArgs }
 }
 
 <#
@@ -251,8 +265,144 @@ task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
 }
 #endregion
 
+#region Decompile
+function Invoke-ApkToolDecode([string] $Apk, [string] $Output) {
+    # get path to apk
+    requires -Path $Apk
+
+    # run apktool
+    $javaArgs = @(
+        "-jar", "`"$ApkTool`"",
+        "decode", "`"$Apk`"",
+        "-o", "`"$Output`"",
+        "-f"
+    )
+    exec { & "$env:JAVA_HOME/bin/java.exe" $javaArgs }
+
+    return $output
+}
+
+function Merge-SmaliDirs([string] $ProjectRoot) {
+    Write-Build Blue "merging smali classes"
+    $mainSmaliDir = [System.IO.Path]::Combine($ProjectRoot, "smali")
+    
+    requires -Path $ProjectRoot
+    requires -Path $mainSmaliDir
+
+    # find all smali dirs
+    $smaliDirs = @()
+    for ($n = 2; ; $n++) {
+        $path = [System.IO.Path]::Combine($ProjectRoot, "smali_classes$n")
+        if (Test-Path -Path $path -PathType Container) {
+            $smaliDirs += $path
+            Write-Build Gray "found $path"
+        }
+        else {
+            break
+        }
+    }
+
+    # merge all smali directories into the main one
+    $count = 0
+    $smaliDirs | ForEach-Object {
+        $smaliDir = $_
+        Get-ChildItem -Path $smaliDir -Recurse -File | ForEach-Object {
+            $relPath = $_.FullName.Substring($smaliDir.Length + 1)
+            $destPath = [System.IO.Path]::Combine($mainSmaliDir, $relPath)
+
+            # create destination if needed
+            $destDir = [System.IO.Path]::GetDirectoryName($destPath)
+            if (-not (Test-Path -Path $destDir)) {
+                New-Item -Path $destDir -ItemType Directory | Out-Null
+            }
+
+            # move to destination
+            Move-Item -Path $_.FullName -Destination $destPath -Force -ErrorAction SilentlyContinue
+            $count++
+        }
+    }
+
+    Write-Build Blue "finished moving $count smali files"
+}
+
+<#
+.SYNOPSIS
+decompile the stock apk
+#>
+task Decompile-Stock {
+    # decompile
+    $output = [System.IO.Path]::Combine(
+        $BuildRoot,
+        "decompiled",
+        [System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)
+    )
+    Invoke-ApkToolDecode -Apk $BaseAPK -Output $output
+
+    # merge smali
+    if ($MergeSmali) {
+        Merge-SmaliDirs -ProjectRoot $output
+    }
+}
+
+<#
+.SYNOPSIS
+decompile the patched apk
+#>
+task Decompile-ReVanced {
+    # decompile
+    $patchedApk = [System.IO.Path]::Combine(
+        [System.IO.Path]::GetDirectoryName($BaseAPK),
+        "$([System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)).patched.apk"
+    )
+    $output = [System.IO.Path]::Combine(
+        $BuildRoot,
+        "decompiled",
+        [System.IO.Path]::GetFileNameWithoutExtension($patchedApk)
+    )
+    Invoke-ApkToolDecode -Apk $patchedApk -Output $output
+
+    # merge smali
+    if ($MergeSmali) {
+        Merge-SmaliDirs -ProjectRoot $output
+    }
+}
+
+<#
+.SYNOPSIS
+deletes all decompile artifacts
+#>
+task Clean-Decompiled {
+    #remove "decompiled"
+
+    # delete using UNC path as the decompiled dir
+    # may contain file paths longer than 260 chars
+    remove "\\?\$([System.IO.Path]::Combine(
+        $BuildRoot,
+        "decompiled"
+    ))"
+}
+#endregion
+
+<#
+.SYNOPSIS
+build all components and then revanced
+#>
+task BuildAll Build-Components, Build-ReVanced
+
+<#
+.SYNOPSIS
+create a fresh build and then decompile it
+#>
+task BuildAndDecompile { Clear-Variable Target -Scope Script }, BuildAll, Decompile-ReVanced
+
+<#
+.SYNOPSIS
+clean the whole workspace
+#>
+task Clean Clean-Build, Clean-Decompiled
+
 <#
 .SYNOPSIS
 default task builds all components and revanced, then launches revanced on the target device
 #>
-task . Build-Components, Build-ReVanced, Launch
+task . BuildAll, Launch

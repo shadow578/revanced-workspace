@@ -12,3 +12,6 @@ revanced-cache/
 # apk and keystore files
 *.apk
 *.keystore
+
+# decompiled app files
+/decompiled
