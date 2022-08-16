@@ -28,36 +28,6 @@
   },
   "tasks": [
     {
-      "label": "CheckJDK",
-      "type": "shell",
-      "command": "Invoke-Build -Task CheckJDK",
-      "problemMatcher": "$msCompile",
-      "presentation": {
-        "echo": false,
-        "showReuseMessage": false
-      }
-    },
-    {
-      "label": "CheckAndroidSDK",
-      "type": "shell",
-      "command": "Invoke-Build -Task CheckAndroidSDK",
-      "problemMatcher": "$msCompile",
-      "presentation": {
-        "echo": false,
-        "showReuseMessage": false
-      }
-    },
-    {
-      "label": "ResolveComponentBuildArtifacts",
-      "type": "shell",
-      "command": "Invoke-Build -Task ResolveComponentBuildArtifacts",
-      "problemMatcher": "$msCompile",
-      "presentation": {
-        "echo": false,
-        "showReuseMessage": false
-      }
-    },
-    {
       "label": "UpdateWorkspace",
       "type": "shell",
       "command": "Invoke-Build -Task UpdateWorkspace",
@@ -90,17 +60,7 @@
     {
       "label": "BuildIntegrations",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildIntegrations",
-      "problemMatcher": "$msCompile",
-      "presentation": {
-        "echo": false,
-        "showReuseMessage": false
-      }
-    },
-    {
-      "label": "BuildComponents",
-      "type": "shell",
-      "command": "Invoke-Build -Task BuildComponents",
+      "command": "Invoke-Build -Task BuildIntegrations -DebugBuild:$${input:debugbuild}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -120,7 +80,7 @@
     {
       "label": "BuildReVanced",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildReVanced",
+      "command": "Invoke-Build -Task BuildReVanced -DebugBuild:$${input:debugbuild}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -140,7 +100,7 @@
     {
       "label": "Launch",
       "type": "shell",
-      "command": "Invoke-Build -Task Launch",
+      "command": "Invoke-Build -Task Launch -Target \"${input:target}\"",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -150,27 +110,7 @@
     {
       "label": "DecompileStock",
       "type": "shell",
-      "command": "Invoke-Build -Task DecompileStock",
-      "problemMatcher": "$msCompile",
-      "presentation": {
-        "echo": false,
-        "showReuseMessage": false
-      }
-    },
-    {
-      "label": "DecompileReVanced",
-      "type": "shell",
-      "command": "Invoke-Build -Task DecompileReVanced",
-      "problemMatcher": "$msCompile",
-      "presentation": {
-        "echo": false,
-        "showReuseMessage": false
-      }
-    },
-    {
-      "label": "MergeSmali",
-      "type": "shell",
-      "command": "Invoke-Build -Task MergeSmali",
+      "command": "Invoke-Build -Task DecompileStock -MergeSmali:$${input:mergesmali}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -190,7 +130,7 @@
     {
       "label": "BuildAll",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildAll",
+      "command": "Invoke-Build -Task BuildAll -DebugBuild:$${input:debugbuild}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -200,7 +140,7 @@
     {
       "label": "BuildAndDecompile",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildAndDecompile",
+      "command": "Invoke-Build -Task BuildAndDecompile -DebugBuild:$${input:debugbuild} -MergeSmali:$${input:mergesmali}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -220,7 +160,7 @@
     {
       "label": ".",
       "type": "shell",
-      "command": "Invoke-Build -Task .",
+      "command": "Invoke-Build -Task . -DebugBuild:$${input:debugbuild} -Target \"${input:target}\"",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -230,16 +170,28 @@
         "kind": "build",
         "isDefault": true
       }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "debugbuild",
+      "description": "create a debug build of the patched app",
+      "default": "true",
+      "type": "pickString",
+      "options": ["true", "false"]
     },
     {
-      "label": "?",
-      "type": "shell",
-      "command": "Invoke-Build -Task ?",
-      "problemMatcher": "$msCompile",
-      "presentation": {
-        "echo": false,
-        "showReuseMessage": false
-      }
+      "id": "target",
+      "description": "device serial number to deploy revanced to",
+      "default": "$null",
+      "type": "promptString"
+    },
+    {
+      "id": "mergesmali",
+      "description": "merge all smali files into a single directory",
+      "default": "false",
+      "type": "pickString",
+      "options": ["true", "false"]
     }
   ]
 }

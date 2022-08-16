@@ -4,12 +4,8 @@
   .SYNOPSIS
   build script for ReVanced
 
-  .DESCRIPTION
-  The Update-Month.ps1 script updates the registry with new data generated
-  during the past month and generates a report.
-
-  .PARAMETER Debug
-  enable debug mode. 
+  .PARAMETER DebugBuild
+  create a debug build of the patched app.
   this enables the 'enable-debugging' patch, and build ReVanced using the debug build of integrations
 
   .PARAMETER DebugPatcher
@@ -35,7 +31,7 @@
   PS> Invoke-Build Clean
 #>
 param(
-    [switch] $Debug = $false,
+    [switch] $DebugBuild = $false,
     [switch] $DebugPatcher = $false,
     [switch] $Root = $false,
     [string] $Target = $null,
@@ -85,7 +81,7 @@ task ResolveComponentBuildArtifacts {
     requires -Path $PatchesPath
 
     # revanced-integrations
-    if ($Debug) {
+    if ($DebugBuild) {
         $global:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/debug/" -Filter "app*.apk").FullName
     }
     else {
@@ -215,16 +211,16 @@ task BuildReVanced CheckJDK, ResolveComponentBuildArtifacts, {
         "--clean"
     )
 
-    # add output path or deployment target
-    if ([string]::IsNullOrWhiteSpace($Target)) {
-        $javaArgs += @(
-            "--out", [System.IO.Path]::Combine(
-                [System.IO.Path]::GetDirectoryName($BaseAPK),
-                "$([System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)).patched.apk"
-            )
+    # add output path
+    $javaArgs += @(
+        "--out", [System.IO.Path]::Combine(
+            [System.IO.Path]::GetDirectoryName($BaseAPK),
+            "$([System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)).patched.apk"
         )
-    }
-    else {
+    )
+
+    # add deployment target
+    if (-not [string]::IsNullOrWhiteSpace($Target)) {
         Write-Build Blue "deploy on $Target"
         $javaArgs += @(
             "--deploy-on", $Target 
@@ -240,7 +236,7 @@ task BuildReVanced CheckJDK, ResolveComponentBuildArtifacts, {
     }
 
     # add debug enable
-    if ($Debug) {
+    if ($DebugBuild) {
         $javaArgs += @(
             "-i", "enable-debugging" 
         )
@@ -311,10 +307,10 @@ task DecompileStock {
 decompile the patched apk
 #>
 task DecompileReVanced {
-    Invoke-ApkToolDecode -Apk [System.IO.Path]::Combine(
+    Invoke-ApkToolDecode -Apk "$([System.IO.Path]::Combine(
         [System.IO.Path]::GetDirectoryName($BaseAPK),
         "$([System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)).patched.apk"
-    )
+    ))"
 }, MergeSmali
 
 <#
