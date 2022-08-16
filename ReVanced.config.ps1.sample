@@ -1,0 +1,24 @@
+# the full path to the (unmodified) apk that will be patched
+# when not deploying to a device, the output apk will be placed in the same directory
+$global:BaseAPK = "path/to/base.apk"
+
+# the main (launcher) activity of the ReVanced app
+# example for YT ReVanced: "app.revanced.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
+if ($Root) {
+    $global:MainActivity = "com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
+}
+else {
+    $global:MainActivity = "app.revanced.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
+}
+
+# repository vendor / owner. 
+# use 'revanced' for the official repos, or any other github username for custom
+# the user provided here must have forked the revanced-cli, revanced-patches and revanced-integrations repo
+$global:Vendor = "revanced"
+
+# path to the Java17 JDK
+# ReVanced recommends Azul JDK 17, which can be downloaded at https://www.azul.com/downloads/?package=jdk#download-openjdk
+$global:JDKHome = "path/to/azul/jdk"
+
+# path to the Android SDK directory
+$global:SDKHome = "path/to/android/sdk"

@@ -1,0 +1,14 @@
+# cloned component repos
+revanced-cli/
+revanced-patches/
+revanced-integrations/
+
+# revanced build cache
+revanced-cache/
+
+# per- user build config file
+*.config.ps1
+
+# apk and keystore files
+*.apk
+*.keystore
