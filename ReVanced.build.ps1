@@ -253,6 +253,14 @@ task Build-ReVanced Check-JDK, Resolve-ComponentBuildArtifacts, {
 
 <#
 .SYNOPSIS
+delete revanced patched apk
+#>
+task Clean-ReVanced {
+    remove "*.patched.apk"
+}
+
+<#
+.SYNOPSIS
 launch the specified activity
 #>
 task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
@@ -387,7 +395,7 @@ task Clean-Decompiled {
 .SYNOPSIS
 build all components and then revanced
 #>
-task BuildAll Build-Components, Build-ReVanced
+task BuildAll Clean-ReVanced, Build-Components, Build-ReVanced
 
 <#
 .SYNOPSIS
@@ -399,7 +407,7 @@ task BuildAndDecompile { Clear-Variable Target -Scope Script }, BuildAll, Decomp
 .SYNOPSIS
 clean the whole workspace
 #>
-task Clean Clean-Build, Clean-Decompiled
+task Clean Clean-Build, Clean-Decompiled, Clean-ReVanced
 
 <#
 .SYNOPSIS
