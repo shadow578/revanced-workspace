@@ -274,27 +274,58 @@ task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
 #endregion
 
 #region Decompile
-function InvokeApkToolDecode([string] $Apk, [string] $Output) {
+function Invoke-ApkToolDecode([string] $Apk) {
     # get path to apk
     requires -Path $Apk
+
+    # build output dir
+    $output = [System.IO.Path]::Combine(
+        $BuildRoot,
+        "decompiled",
+        [System.IO.Path]::GetFileNameWithoutExtension($patchedApk)
+    )
 
     # run apktool
     $javaArgs = @(
         "-jar", "`"$ApkTool`"",
         "decode", "`"$Apk`"",
-        "-o", "`"$Output`"",
+        "-o", "`"$output`"",
         "-f"
     )
     exec { & "$env:JAVA_HOME/bin/java.exe" $javaArgs }
 
-    return $output
+    # write project dir path to variable for MergeSmali task
+    $global:SmaliProjectRoot = $output
 }
 
-function MergeSmaliDirs([string] $ProjectRoot) {
-    Write-Build Blue "merging smali classes"
-    $mainSmaliDir = [System.IO.Path]::Combine($ProjectRoot, "smali")
-    
+<#
+.SYNOPSIS
+decompile the stock apk
+#>
+task DecompileStock {
+    Invoke-ApkToolDecode -Apk $BaseAPK
+}, MergeSmali
+
+<#
+.SYNOPSIS
+decompile the patched apk
+#>
+task DecompileReVanced {
+    Invoke-ApkToolDecode -Apk [System.IO.Path]::Combine(
+        [System.IO.Path]::GetDirectoryName($BaseAPK),
+        "$([System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)).patched.apk"
+    )
+}, MergeSmali
+
+<#
+.SYNOPSIS
+Internal task to merge all smali classes into one directory
+#>
+task MergeSmali -If ($MergeSmali) {
+    $ProjectRoot = $SmaliProjectRoot
     requires -Path $ProjectRoot
+
+    $mainSmaliDir = [System.IO.Path]::Combine($ProjectRoot, "smali")
     requires -Path $mainSmaliDir
 
     # find all smali dirs
@@ -331,48 +362,6 @@ function MergeSmaliDirs([string] $ProjectRoot) {
     }
 
     Write-Build Blue "finished moving $count smali files"
-}
-
-<#
-.SYNOPSIS
-decompile the stock apk
-#>
-task DecompileStock {
-    # decompile
-    $output = [System.IO.Path]::Combine(
-        $BuildRoot,
-        "decompiled",
-        [System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)
-    )
-    Invoke-ApkToolDecode -Apk $BaseAPK -Output $output
-
-    # merge smali
-    if ($MergeSmali) {
-        Merge-SmaliDirs -ProjectRoot $output
-    }
-}
-
-<#
-.SYNOPSIS
-decompile the patched apk
-#>
-task DecompileReVanced {
-    # decompile
-    $patchedApk = [System.IO.Path]::Combine(
-        [System.IO.Path]::GetDirectoryName($BaseAPK),
-        "$([System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)).patched.apk"
-    )
-    $output = [System.IO.Path]::Combine(
-        $BuildRoot,
-        "decompiled",
-        [System.IO.Path]::GetFileNameWithoutExtension($patchedApk)
-    )
-    Invoke-ApkToolDecode -Apk $patchedApk -Output $output
-
-    # merge smali
-    if ($MergeSmali) {
-        Merge-SmaliDirs -ProjectRoot $output
-    }
 }
 
 <#
