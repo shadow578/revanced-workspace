@@ -57,7 +57,7 @@ requires ApkTool
 .SYNOPSIS
 Internal task to check the for the presence of JDK
 #>
-task Check-JDK {
+task CheckJDK {
     requires -Path "$JDKHome/bin/java.exe"
     $env:JAVA_HOME = $JDKHome
 }
@@ -66,7 +66,7 @@ task Check-JDK {
 .SYNOPSIS
 Internal task to check the for the presence of android sdk
 #>
-task Check-AndroidSDK {
+task CheckAndroidSDK {
     requires -Path $SDKHome
     $env:ANDROID_HOME = $SDKHome
 }
@@ -75,7 +75,7 @@ task Check-AndroidSDK {
 .SYNOPSIS
 Internal task to resolve all component build artifacts
 #>
-task Resolve-ComponentBuildArtifacts {
+task ResolveComponentBuildArtifacts {
     # revanced-cli
     $global:CliPath = (Get-ChildItem -Path "$BuildRoot/revanced-cli/build/libs/" -Filter "revanced-cli-*-all.jar").FullName
     requires -Path $CliPath
@@ -100,7 +100,7 @@ task Resolve-ComponentBuildArtifacts {
 .SYNOPSIS
 Initialize or Update the workspace, pulling all required component repositories. The vendor of the pulled components may be changed using the '-Vendor' option
 #>
-task Update-Workspace {
+task UpdateWorkspace {
     @("revanced-cli", "revanced-patches", "revanced-integrations") | ForEach-Object {
         $name = $_
         $path = [System.IO.Path]::Combine($BuildRoot, $name)
@@ -124,7 +124,7 @@ task Update-Workspace {
 .SYNOPSIS
 builds the 'revanced-cli' component from source
 #>
-task Build-PatcherCli Check-JDK, {
+task BuildPatcherCli CheckJDK, {
     # change into repo dir
     requires -Path "revanced-cli"
     Set-Location -Path "revanced-cli"
@@ -139,7 +139,7 @@ task Build-PatcherCli Check-JDK, {
 .SYNOPSIS
 builds the 'revanced-patches' component from source
 #>
-task Build-Patches Check-JDK, {
+task BuildPatches CheckJDK, {
     # change into repo dir
     requires -Path "revanced-patches"
     Set-Location -Path "revanced-patches"
@@ -154,7 +154,7 @@ task Build-Patches Check-JDK, {
 .SYNOPSIS
 builds the 'revanced-integrations' component from source
 #>
-task Build-Integrations Check-JDK, Check-AndroidSDK, {
+task BuildIntegrations CheckJDK, CheckAndroidSDK, {
     # change into repo dir
     requires -Path "revanced-integrations"
     Set-Location -Path "revanced-integrations"
@@ -169,13 +169,13 @@ task Build-Integrations Check-JDK, Check-AndroidSDK, {
 .SYNOPSIS
 builds all components from source
 #>
-task Build-Components Build-PatcherCli, Build-Patches, Build-Integrations
+task BuildComponents BuildPatcherCli, BuildPatches, BuildIntegrations
 
 <#
 .SYNOPSIS
 deletes build artifacts of all components
 #>
-task Clean-Build {
+task CleanComponents {
     # revanced-cli
     remove "revanced-cli/.gradle/"
     remove "revanced-cli/build/"
@@ -196,7 +196,7 @@ task Clean-Build {
 .SYNOPSIS
 build and deploy revanced
 #>
-task Build-ReVanced Check-JDK, Resolve-ComponentBuildArtifacts, {
+task BuildReVanced CheckJDK, ResolveComponentBuildArtifacts, {
     # set cli debugging arguments
     $javaArgs = @()
     if ($DebugPatcher) {
@@ -255,7 +255,7 @@ task Build-ReVanced Check-JDK, Resolve-ComponentBuildArtifacts, {
 .SYNOPSIS
 delete revanced patched apk
 #>
-task Clean-ReVanced {
+task CleanReVanced {
     remove "*.patched.apk"
 }
 
@@ -274,7 +274,7 @@ task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
 #endregion
 
 #region Decompile
-function Invoke-ApkToolDecode([string] $Apk, [string] $Output) {
+function InvokeApkToolDecode([string] $Apk, [string] $Output) {
     # get path to apk
     requires -Path $Apk
 
@@ -290,7 +290,7 @@ function Invoke-ApkToolDecode([string] $Apk, [string] $Output) {
     return $output
 }
 
-function Merge-SmaliDirs([string] $ProjectRoot) {
+function MergeSmaliDirs([string] $ProjectRoot) {
     Write-Build Blue "merging smali classes"
     $mainSmaliDir = [System.IO.Path]::Combine($ProjectRoot, "smali")
     
@@ -337,7 +337,7 @@ function Merge-SmaliDirs([string] $ProjectRoot) {
 .SYNOPSIS
 decompile the stock apk
 #>
-task Decompile-Stock {
+task DecompileStock {
     # decompile
     $output = [System.IO.Path]::Combine(
         $BuildRoot,
@@ -356,7 +356,7 @@ task Decompile-Stock {
 .SYNOPSIS
 decompile the patched apk
 #>
-task Decompile-ReVanced {
+task DecompileReVanced {
     # decompile
     $patchedApk = [System.IO.Path]::Combine(
         [System.IO.Path]::GetDirectoryName($BaseAPK),
@@ -379,7 +379,7 @@ task Decompile-ReVanced {
 .SYNOPSIS
 deletes all decompile artifacts
 #>
-task Clean-Decompiled {
+task CleanDecompiled {
     #remove "decompiled"
 
     # delete using UNC path as the decompiled dir
@@ -395,19 +395,19 @@ task Clean-Decompiled {
 .SYNOPSIS
 build all components and then revanced
 #>
-task BuildAll Clean-ReVanced, Build-Components, Build-ReVanced
+task BuildAll CleanReVanced, BuildComponents, BuildReVanced
 
 <#
 .SYNOPSIS
 create a fresh build and then decompile it
 #>
-task BuildAndDecompile { Clear-Variable Target -Scope Script }, BuildAll, Decompile-ReVanced
+task BuildAndDecompile { Clear-Variable Target -Scope Script }, BuildAll, DecompileReVanced
 
 <#
 .SYNOPSIS
 clean the whole workspace
 #>
-task Clean Clean-Build, Clean-Decompiled, Clean-ReVanced
+task Clean CleanComponents, CleanDecompiled, CleanReVanced
 
 <#
 .SYNOPSIS

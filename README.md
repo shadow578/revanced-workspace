@@ -7,7 +7,7 @@ workspace for development of [ReVanced](https://revanced.app/).
 
 1. install the [Invoke-Build](https://github.com/nightroman/Invoke-Build) module first. 
 2. copy the `ReVanced.config.ps1.sample` file, rename it to `ReVanced.config.ps1` and fill it
-3. run `Invoke-Build Update-Workspace` to setup the workspace
+3. run `Invoke-Build UpdateWorkspace` to setup the workspace
 4. run `Invoke-Build` to build & deploy ReVanced
 
 
