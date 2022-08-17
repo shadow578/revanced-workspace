@@ -278,7 +278,7 @@ function Invoke-ApkToolDecode([string] $Apk) {
     $output = [System.IO.Path]::Combine(
         $BuildRoot,
         "decompiled",
-        [System.IO.Path]::GetFileNameWithoutExtension($patchedApk)
+        [System.IO.Path]::GetFileNameWithoutExtension($Apk)
     )
 
     # run apktool
