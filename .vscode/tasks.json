@@ -183,8 +183,9 @@
     {
       "id": "target",
       "description": "device serial number to deploy revanced to",
-      "default": "$null",
-      "type": "promptString"
+      "default": "emulator-5554",
+      "type": "pickString",
+      "options": ["emulator-5554", "emulator-5555", "emulator-5556", "$null"]
     },
     {
       "id": "mergesmali",
