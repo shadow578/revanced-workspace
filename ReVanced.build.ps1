@@ -38,15 +38,8 @@ param(
     [switch] $MergeSmali = $false
 )
 
-#region load global config
+# load global config
 . .\ReVanced.config.ps1
-requires BaseAPK
-requires MainActivity
-requires Vendor
-requires JDKHome
-requires SDKHome
-requires ApkTool
-#endregion
 
 #region Internal
 <#
@@ -54,6 +47,7 @@ requires ApkTool
 Internal task to check the for the presence of JDK
 #>
 task CheckJDK {
+    requires JDKHome
     requires -Path "$JDKHome/bin/java.exe"
     $env:JAVA_HOME = $JDKHome
 }
@@ -63,6 +57,7 @@ task CheckJDK {
 Internal task to check the for the presence of android sdk
 #>
 task CheckAndroidSDK {
+    requires SDKHome
     requires -Path $SDKHome
     $env:ANDROID_HOME = $SDKHome
 }
@@ -94,9 +89,11 @@ task ResolveComponentBuildArtifacts {
 #region Workspace Update & Init
 <#
 .SYNOPSIS
-Initialize or Update the workspace, pulling all required component repositories. The vendor of the pulled components may be changed using the '-Vendor' option
+Initialize or Update the workspace, pulling all required component repositories
 #>
 task UpdateWorkspace {
+    requires Vendor
+
     @("revanced-cli", "revanced-patches", "revanced-integrations") | ForEach-Object {
         $name = $_
         $path = [System.IO.Path]::Combine($BuildRoot, $name)
@@ -193,6 +190,8 @@ task CleanComponents {
 build and deploy revanced
 #>
 task BuildReVanced CheckJDK, ResolveComponentBuildArtifacts, {
+    requires BaseAPK
+
     # set cli debugging arguments
     $javaArgs = @()
     if ($DebugPatcher) {
@@ -260,6 +259,8 @@ task CleanReVanced {
 launch the specified activity
 #>
 task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
+    requires MainActivity
+
     if ($DebugBuild) {
         exec { adb -s $Target shell am start -D -S -n $MainActivity -a "android.intent.action.MAIN" -c "android.intent.category.LAUNCHER" }
     }
@@ -271,7 +272,7 @@ task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
 
 #region Decompile
 function Invoke-ApkToolDecode([string] $Apk) {
-    # get path to apk
+    requires ApkTool
     requires -Path $Apk
 
     # build output dir
@@ -298,7 +299,8 @@ function Invoke-ApkToolDecode([string] $Apk) {
 .SYNOPSIS
 decompile the stock apk
 #>
-task DecompileStock {
+task DecompileStock CheckJDK, {
+    requires BaseAPK
     Invoke-ApkToolDecode -Apk $BaseAPK
 }, MergeSmali
 
@@ -306,7 +308,8 @@ task DecompileStock {
 .SYNOPSIS
 decompile the patched apk
 #>
-task DecompileReVanced {
+task DecompileReVanced CheckJDK, {
+    requires BaseAPK
     Invoke-ApkToolDecode -Apk "$([System.IO.Path]::Combine(
         [System.IO.Path]::GetDirectoryName($BaseAPK),
         "$([System.IO.Path]::GetFileNameWithoutExtension($BaseAPK)).patched.apk"
