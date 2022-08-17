@@ -260,7 +260,7 @@ task CleanReVanced {
 launch the specified activity
 #>
 task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
-    if ($Debug) {
+    if ($DebugBuild) {
         exec { adb -s $Target shell am start -D -S -n $MainActivity -a "android.intent.action.MAIN" -c "android.intent.category.LAUNCHER" }
     }
     else {
