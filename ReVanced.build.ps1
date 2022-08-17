@@ -64,6 +64,17 @@ task CheckAndroidSDK {
 
 <#
 .SYNOPSIS
+Internal task to check the for the presence of github package repository credentials, as configured in the config file
+#>
+task CheckGPRCredentials {
+    requires GPRUserName
+    requires GPRToken
+    $env:GITHUB_ACTOR = $GPRUserName
+    $env:GITHUB_TOKEN = $GPRToken
+}
+
+<#
+.SYNOPSIS
 Internal task to resolve all component build artifacts
 #>
 task ResolveComponentBuildArtifacts {
@@ -117,7 +128,7 @@ task UpdateWorkspace {
 .SYNOPSIS
 builds the 'revanced-cli' component from source
 #>
-task BuildPatcherCli CheckJDK, {
+task BuildPatcherCli CheckJDK, CheckGPRCredentials, {
     # change into repo dir
     requires -Path "revanced-cli"
     Set-Location -Path "revanced-cli"
@@ -132,7 +143,7 @@ task BuildPatcherCli CheckJDK, {
 .SYNOPSIS
 builds the 'revanced-patches' component from source
 #>
-task BuildPatches CheckJDK, {
+task BuildPatches CheckJDK, CheckGPRCredentials, {
     # change into repo dir
     requires -Path "revanced-patches"
     Set-Location -Path "revanced-patches"

@@ -16,6 +16,15 @@ else {
 # the user provided here must have forked the revanced-cli, revanced-patches and revanced-integrations repo
 $global:Vendor = "revanced"
 
+# username for use with GitHub packages repository
+# this will be your GitHub username
+$global:GPRUserName = "your-username"
+
+# PAT for use with GitHub packages repository
+# the PAT must (at least) have the 'read:packages' scope
+# a new token can be generated here: https://github.com/settings/tokens/new?scopes=read:packages&description=Revanced
+$global:GPRToken = "ghp_longrandomkey"
+
 # path to the Java17 JDK
 # ReVanced recommends Azul JDK 17, which can be downloaded at https://www.azul.com/downloads/?package=jdk#download-openjdk
 $global:JDKHome = "path/to/azul/jdk"
