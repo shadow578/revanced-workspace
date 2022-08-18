@@ -2,15 +2,6 @@
 # when not deploying to a device, the output apk will be placed in the same directory
 $global:BaseAPK = "path/to/base.apk"
 
-# the main (launcher) activity of the ReVanced app
-# example for YT ReVanced: "app.revanced.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
-if ($Root) {
-    $global:MainActivity = "com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
-}
-else {
-    $global:MainActivity = "app.revanced.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
-}
-
 # repository vendor / owner. 
 # use 'revanced' for the official repos, or any other github username for custom
 # the user provided here must have forked the revanced-cli, revanced-patches and revanced-integrations repo
@@ -35,3 +26,56 @@ $global:SDKHome = "path/to/android/sdk"
 # path to apktool.jar
 # can be downloaded at https://ibotpeaches.github.io/Apktool/install/
 $global:ApkTool = "path/to/apktool.jar"
+
+# build configuration that controls what and how the patched app is build
+$global:BuildConfigurations = @{
+    # defaul configuration profile, this is always loaded. 
+    # other profiles will overwrite the values in this configuration
+    Default      = @{
+        # use the debug build of integrations if true
+        UseIntegrationsDebugBuild = $false
+
+        # include the 'enable-debugging' patch
+        IncludeDebuggingPatch     = $false
+
+        # makes the patcher-cli wait for a debugger to attach
+        # useful when debugging patches
+        DebuggablePatcherCli      = $false
+
+        # make the app wait for a debugger to attach when launching
+        DebuggableAppLaunch       = $false
+
+        # use build and deploy parameters for rooted devices
+        Root                      = $false
+
+        # the main (launcher) activity of the ReVanced app, used by the launch task
+        MainActivity              = "app.revanced.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
+
+        # additional arguments for patcher-cli, eg. to include or exclude patches
+        AdditionalPatcherArgs     = @()
+    }
+
+    # debug build for non-root devices
+    Debug        = @{
+        UseIntegrationsDebugBuild = $true
+        IncludeDebuggingPatch     = $true
+        DebuggableAppLaunch       = $true
+    }
+
+    # debug build for rooted devices
+    DebugRoot    = @{
+        UseIntegrationsDebugBuild = $true
+        IncludeDebuggingPatch     = $true
+        DebuggableAppLaunch       = $true
+        Root                      = $true
+        MainActivity              = "com.google.android.youtube/com.google.android.youtube.app.honeycomb.Shell\`$HomeActivity"
+    }
+
+    # special config for patcher debugging
+    PatcherDebug = @{
+        UseIntegrationsDebugBuild = $true
+        IncludeDebuggingPatch     = $true
+        DebuggablePatcherCli      = $true
+        DebuggableAppLaunch       = $true
+    }
+}

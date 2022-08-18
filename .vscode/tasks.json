@@ -60,7 +60,7 @@
     {
       "label": "BuildIntegrations",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildIntegrations -DebugBuild:$${input:debugbuild}",
+      "command": "Invoke-Build -Task BuildIntegrations",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -80,7 +80,7 @@
     {
       "label": "BuildReVanced",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildReVanced -DebugBuild:$${input:debugbuild}",
+      "command": "Invoke-Build -Task BuildReVanced -Configuration ${input:configuration}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -100,7 +100,7 @@
     {
       "label": "Launch",
       "type": "shell",
-      "command": "Invoke-Build -Task Launch -Target \"${input:target}\"",
+      "command": "Invoke-Build -Task Launch -Configuration ${input:configuration} -Target \"${input:target}\"",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -130,7 +130,7 @@
     {
       "label": "BuildAll",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildAll -DebugBuild:$${input:debugbuild}",
+      "command": "Invoke-Build -Task BuildAll -Configuration ${input:configuration}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -140,7 +140,7 @@
     {
       "label": "BuildAndDecompile",
       "type": "shell",
-      "command": "Invoke-Build -Task BuildAndDecompile -DebugBuild:$${input:debugbuild} -MergeSmali:$${input:mergesmali}",
+      "command": "Invoke-Build -Task BuildAndDecompile -Configuration ${input:configuration} -MergeSmali:$${input:mergesmali}",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -160,7 +160,7 @@
     {
       "label": ".",
       "type": "shell",
-      "command": "Invoke-Build -Task . -DebugBuild:$${input:debugbuild} -Target \"${input:target}\"",
+      "command": "Invoke-Build -Task . -Configuration ${input:configuration} -Target \"${input:target}\"",
       "problemMatcher": "$msCompile",
       "presentation": {
         "echo": false,
@@ -174,11 +174,11 @@
   ],
   "inputs": [
     {
-      "id": "debugbuild",
-      "description": "create a debug build of the patched app",
-      "default": "true",
+      "id": "configuration",
+      "description": "configuration profile to use for the build",
+      "default": "Default",
       "type": "pickString",
-      "options": ["true", "false"]
+      "options": ["Default", "Debug", "DebugRoot", "PatcherDebug"]
     },
     {
       "id": "target",

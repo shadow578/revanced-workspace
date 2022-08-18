@@ -4,16 +4,9 @@
   .SYNOPSIS
   build script for ReVanced
 
-  .PARAMETER DebugBuild
-  create a debug build of the patched app.
-  this enables the 'enable-debugging' patch, and build ReVanced using the debug build of integrations
-
-  .PARAMETER DebugPatcher
-  make the patcher wait for a debugger.
-  useful for debugging patches
-
-  .PARAMETER Root
-  use build and deploy parameters for rooted devices
+  .PARAMETER Configuration
+  configuration profile to use for the build. 
+  Must have a matching entry in the configured $BuildConfigurations 
 
   .PARAMETER Target
   device serial number to deploy revanced to. 
@@ -31,17 +24,41 @@
   PS> Invoke-Build Clean
 #>
 param(
-    [switch] $DebugBuild = $false,
-    [switch] $DebugPatcher = $false,
-    [switch] $Root = $false,
+    [string] $Configuration = "Default",
     [string] $Target = $null,
     [switch] $MergeSmali = $false
 )
 
-# load global config
+# load config file
 . .\ReVanced.config.ps1
 
 #region Internal
+<#
+.SYNOPSIS
+Internal task to load build configuration
+#>
+task LoadBuildConfiguration {
+    requires BuildConfigurations
+    requires Configuration
+    assert (-not [string]::IsNullOrWhiteSpace($Configuration))
+
+    # load default configuration entry
+    $script:BuildConfig = $BuildConfigurations.Default
+    assert ($null -ne $BuildConfig) "configuration 'Default' was not found"
+
+    # load specific configuration and merge into default
+    if ($Configuration -ine "Default") {
+        $cfg = $BuildConfigurations.$Configuration
+        assert ($null -ne $cfg) "configuration '$Configuration' was not found"
+
+        foreach ($key in $cfg.Keys) {
+            $script:BuildConfig.$key = $cfg.$key
+        }
+    }
+
+    Write-Build Blue "loaded '$Configuration' build configuration"
+}
+
 <#
 .SYNOPSIS
 Internal task to check the for the presence of JDK
@@ -77,21 +94,22 @@ task CheckGPRCredentials {
 .SYNOPSIS
 Internal task to resolve all component build artifacts
 #>
-task ResolveComponentBuildArtifacts {
+task ResolveComponentBuildArtifacts LoadBuildConfiguration, {
     # revanced-cli
-    $global:CliPath = (Get-ChildItem -Path "$BuildRoot/revanced-cli/build/libs/" -Filter "revanced-cli-*-all.jar").FullName
+    $script:CliPath = (Get-ChildItem -Path "$BuildRoot/revanced-cli/build/libs/" -Filter "revanced-cli-*-all.jar").FullName
     requires -Path $CliPath
 
     # revanced-patches
-    $global:PatchesPath = (Get-ChildItem -Path "$BuildRoot/revanced-patches/build/libs/" -Filter "revanced-patches-*.jar").FullName
+    $script:PatchesPath = (Get-ChildItem -Path "$BuildRoot/revanced-patches/build/libs/" -Filter "revanced-patches-*.jar").FullName
     requires -Path $PatchesPath
 
     # revanced-integrations
-    if ($DebugBuild) {
-        $global:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/debug/" -Filter "app*.apk").FullName
+    assert ($null -ne $BuildConfig.UseIntegrationsDebugBuild)
+    if ($BuildConfig.UseIntegrationsDebugBuild) {
+        $script:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/debug/" -Filter "app*.apk").FullName
     }
     else {
-        $global:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/release/" -Filter "app*.apk").FullName
+        $script:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/release/" -Filter "app*.apk").FullName
     }
     requires -Path $IntegrationsPath
 }
@@ -200,12 +218,13 @@ task CleanComponents {
 .SYNOPSIS
 build and deploy revanced
 #>
-task BuildReVanced CheckJDK, ResolveComponentBuildArtifacts, {
+task BuildReVanced CheckJDK, LoadBuildConfiguration, ResolveComponentBuildArtifacts, {
     requires BaseAPK
 
     # set cli debugging arguments
     $javaArgs = @()
-    if ($DebugPatcher) {
+    assert ($null -ne $BuildConfig.DebuggablePatcherCli)
+    if ($BuildConfig.DebuggablePatcherCli) {
         Write-Build DarkYellow "revanced-cli will wait for debugger to attach!"
         $javaArgs += @(
             "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"
@@ -238,7 +257,7 @@ task BuildReVanced CheckJDK, ResolveComponentBuildArtifacts, {
     }
 
     # add args for root installation
-    if ($Root) {
+    if ($Configuration.Root) {
         $javaArgs += @(
             "-e", "microg-support",
             "--mount" 
@@ -246,10 +265,16 @@ task BuildReVanced CheckJDK, ResolveComponentBuildArtifacts, {
     }
 
     # add debug enable
-    if ($DebugBuild) {
+    assert ($null -ne $BuildConfig.IncludeDebuggingPatch)
+    if ($BuildConfig.IncludeDebuggingPatch) {
         $javaArgs += @(
             "-i", "enable-debugging" 
         )
+    }
+
+    # add additional args
+    if ($null -ne $BuildConfig.AdditionalPatcherArgs) {
+        $javaArgs += $BuildConfig.AdditionalPatcherArgs
     }
 
     # run patcher
@@ -269,14 +294,14 @@ task CleanReVanced {
 .SYNOPSIS
 launch the specified activity
 #>
-task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) {
-    requires MainActivity
-
-    if ($DebugBuild) {
-        exec { adb -s $Target shell am start -D -S -n $MainActivity -a "android.intent.action.MAIN" -c "android.intent.category.LAUNCHER" }
+task Launch -If (-not [string]::IsNullOrWhiteSpace($Target)) LoadBuildConfiguration, {
+    assert ($null -ne $BuildConfig.DebuggablePatcherCli)
+    assert ($null -ne $BuildConfig.MainActivity)
+    if ($BuildConfig.DebuggableAppLaunch) {
+        exec { adb -s $Target shell am start -D -S -n $BuildConfig.MainActivity -a "android.intent.action.MAIN" -c "android.intent.category.LAUNCHER" }
     }
     else {
-        exec { adb -s $Target  shell am start -S -n $MainActivity -a "android.intent.action.MAIN" -c "android.intent.category.LAUNCHER" }
+        exec { adb -s $Target  shell am start -S -n $BuildConfig.MainActivity -a "android.intent.action.MAIN" -c "android.intent.category.LAUNCHER" }
     }
 }
 #endregion
@@ -303,7 +328,7 @@ function Invoke-ApkToolDecode([string] $Apk) {
     exec { & "$env:JAVA_HOME/bin/java.exe" $javaArgs }
 
     # write project dir path to variable for MergeSmali task
-    $global:SmaliProjectRoot = $output
+    $script:SmaliProjectRoot = $output
 }
 
 <#
