@@ -106,10 +106,10 @@ task ResolveComponentBuildArtifacts LoadBuildConfiguration, {
     # revanced-integrations
     assert ($null -ne $BuildConfig.UseIntegrationsDebugBuild)
     if ($BuildConfig.UseIntegrationsDebugBuild) {
-        $script:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/debug/" -Filter "app*.apk").FullName
+        $script:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/debug/" -Filter "*.apk").FullName
     }
     else {
-        $script:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/release/" -Filter "app*.apk").FullName
+        $script:IntegrationsPath = (Get-ChildItem -Path "$BuildRoot/revanced-integrations/app/build/outputs/apk/release/" -Filter "*.apk").FullName
     }
     requires -Path $IntegrationsPath
 }
@@ -235,7 +235,7 @@ task BuildReVanced CheckJDK, LoadBuildConfiguration, ResolveComponentBuildArtifa
     $javaArgs += @(
         "-jar", $CliPath,
         "--apk", "`"$BaseAPK`"",
-        "--bundles", "`"$PatchesPath`"",
+        "--bundle", "`"$PatchesPath`"",
         "--merge", "`"$IntegrationsPath`"",
         "--clean"
     )
