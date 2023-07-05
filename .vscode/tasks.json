@@ -185,7 +185,13 @@
       "description": "device serial number to deploy revanced to",
       "default": "emulator-5554",
       "type": "pickString",
-      "options": ["emulator-5554", "emulator-5555", "emulator-5556", "$null"]
+      "options": [
+        "emulator-5554",
+        "emulator-5555",
+        "emulator-5556",
+        ":real-device",
+        "$null"
+      ]
     },
     {
       "id": "mergesmali",

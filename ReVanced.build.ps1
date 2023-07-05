@@ -32,6 +32,18 @@ param(
 # load config file
 . .\ReVanced.config.ps1
 
+# replace named deployment target with serial number from config
+# named targets are prefixed with a colon (:<name>)
+if ($null -ne $Target -and $Target.StartsWith(":")) {
+    # get name without colon
+    $targetName = $Target.Substring(1)
+
+    # read serial number from config
+    $Target = $NamedTargets.$targetName
+    assert ($null -ne $Target -and -not [string]::IsNullOrWhiteSpace($Target)) "named target '$targetName' was not found"
+}
+
+
 #region Internal
 <#
 .SYNOPSIS

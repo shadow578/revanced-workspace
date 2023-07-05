@@ -15,3 +15,6 @@ revanced-cache/
 
 # decompiled app files
 /decompiled
+
+# revanced config files
+options.toml

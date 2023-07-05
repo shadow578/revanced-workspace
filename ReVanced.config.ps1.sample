@@ -79,3 +79,8 @@ $global:BuildConfigurations = @{
         DebuggableAppLaunch       = $true
     }
 }
+
+# named deployment targets
+$global:NamedTargets = @{
+    "real-device" = "my-serial"
+}
