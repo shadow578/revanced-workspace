@@ -260,10 +260,11 @@ task BuildReVanced CheckJDK17, LoadBuildConfiguration, ResolveComponentBuildArti
     # set common arguments
     $javaArgs += @(
         "-jar", $CliPath,
-        "--apk", "`"$BaseAPK`"",
-        "--bundle", "`"$PatchesPath`"",
+        "patch",
+        "`"$BaseAPK`"",
+        "--patch-bundle", "`"$PatchesPath`"",
         "--merge", "`"$IntegrationsPath`"",
-        "--clean"
+        "--purge"
     )
 
     # add output path
@@ -278,7 +279,7 @@ task BuildReVanced CheckJDK17, LoadBuildConfiguration, ResolveComponentBuildArti
     if (-not [string]::IsNullOrWhiteSpace($Target)) {
         Write-Build Blue "deploy on $Target"
         $javaArgs += @(
-            "--deploy-on", $Target 
+            "--device-serial", $Target 
         )
     }
 
