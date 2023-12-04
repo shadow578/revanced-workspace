@@ -73,12 +73,26 @@ task LoadBuildConfiguration {
 
 <#
 .SYNOPSIS
-Internal task to check the for the presence of JDK
+Internal task to check the for the presence of JDK11. also sets JAVA_HOME
 #>
-task CheckJDK {
-    requires JDKHome
-    requires -Path "$JDKHome/bin/java.exe"
-    $env:JAVA_HOME = $JDKHome
+task CheckJDK11 {
+    requires JDK11Home
+    requires -Path "$JDK11Home/bin/java.exe"
+    $env:JAVA_HOME = $JDK11Home
+
+    Write-Build Blue "using JDK11"
+}
+
+<#
+.SYNOPSIS
+Internal task to check the for the presence of JDK17. also sets JAVA_HOME
+#>
+task CheckJDK17 {
+    requires JDK17Home
+    requires -Path "$JDK17Home/bin/java.exe"
+    $env:JAVA_HOME = $JDK17Home
+
+    Write-Build Blue "using JDK17"
 }
 
 <#
@@ -158,7 +172,7 @@ task UpdateWorkspace {
 .SYNOPSIS
 builds the 'revanced-cli' component from source
 #>
-task BuildPatcherCli CheckJDK, CheckGPRCredentials, {
+task BuildPatcherCli CheckJDK11, CheckGPRCredentials, {
     # change into repo dir
     requires -Path "revanced-cli"
     Set-Location -Path "revanced-cli"
@@ -173,7 +187,7 @@ task BuildPatcherCli CheckJDK, CheckGPRCredentials, {
 .SYNOPSIS
 builds the 'revanced-patches' component from source
 #>
-task BuildPatches CheckJDK, CheckGPRCredentials, {
+task BuildPatches CheckJDK11, CheckGPRCredentials, {
     # change into repo dir
     requires -Path "revanced-patches"
     Set-Location -Path "revanced-patches"
@@ -188,7 +202,7 @@ task BuildPatches CheckJDK, CheckGPRCredentials, {
 .SYNOPSIS
 builds the 'revanced-integrations' component from source
 #>
-task BuildIntegrations CheckJDK, CheckAndroidSDK, {
+task BuildIntegrations CheckJDK17, CheckAndroidSDK, {
     # change into repo dir
     requires -Path "revanced-integrations"
     Set-Location -Path "revanced-integrations"
@@ -230,7 +244,7 @@ task CleanComponents {
 .SYNOPSIS
 build and deploy revanced
 #>
-task BuildReVanced CheckJDK, LoadBuildConfiguration, ResolveComponentBuildArtifacts, {
+task BuildReVanced CheckJDK17, LoadBuildConfiguration, ResolveComponentBuildArtifacts, {
     requires BaseAPK
 
     # set cli debugging arguments
@@ -347,7 +361,7 @@ function Invoke-ApkToolDecode([string] $Apk) {
 .SYNOPSIS
 decompile the stock apk
 #>
-task DecompileStock CheckJDK, {
+task DecompileStock CheckJDK17, {
     requires BaseAPK
     Invoke-ApkToolDecode -Apk $BaseAPK
 }, MergeSmali
@@ -356,7 +370,7 @@ task DecompileStock CheckJDK, {
 .SYNOPSIS
 decompile the patched apk
 #>
-task DecompileReVanced CheckJDK, {
+task DecompileReVanced CheckJDK17, {
     requires BaseAPK
     Invoke-ApkToolDecode -Apk "$([System.IO.Path]::Combine(
         [System.IO.Path]::GetDirectoryName($BaseAPK),

@@ -18,7 +18,8 @@ $global:GPRToken = "ghp_longrandomkey"
 
 # path to the Java17 JDK
 # ReVanced recommends Azul JDK 17, which can be downloaded at https://www.azul.com/downloads/?package=jdk#download-openjdk
-$global:JDKHome = "path/to/azul/jdk"
+$global:JDK17Home = "path/to/jdk17"
+$global:JDK11Home = "path/to/jdk11"
 
 # path to the Android SDK directory
 $global:SDKHome = "path/to/android/sdk"
