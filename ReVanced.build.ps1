@@ -295,7 +295,7 @@ task BuildReVanced CheckJDK17, LoadBuildConfiguration, ResolveComponentBuildArti
     assert ($null -ne $BuildConfig.IncludeDebuggingPatch)
     if ($BuildConfig.IncludeDebuggingPatch) {
         $javaArgs += @(
-            "-i", "enable-debugging" 
+            "-i", "Enable Android debugging" 
         )
     }
 
